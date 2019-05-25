@@ -1,4 +1,4 @@
-local module = {}
+local module = { util = {} }
 
 -- TODO: Refactor to have functions as local vals rather than table members,
 -- then export them at the end.
@@ -117,6 +117,56 @@ function module.scanResourceRecord(message, position)
   -- Now we should be at the Record Data Length field.
   -- Add 2 to skip it, since it's a UInt16.
   return position + 2 + module.readUInt16BE(message, position)
+end
+
+function module.readHeaderId(message)
+  return module.readUInt16BE(message, 1)
+end
+
+function module.readHeaderFlags(message)
+  return module.readUInt16BE(message, 3)
+end
+
+function module.readHeaderFlagsIsResponse(headerFlags)
+  return module.util.isBitSet(headerFlags, 0x8000)
+end
+
+function module.readHeaderFlagsOpCode(headerFlags)
+  return ((headerFlags % 0x8000) - (headerFlags % 0x0800)) / 0x0800
+end
+
+function module.readHeaderFlagsIsAuthoritativeAnswer(headerFlags)
+  return module.util.isBitSet(headerFlags, 0x0400)
+end
+
+function module.readHeaderFlagsIsTruncated(headerFlags)
+  return module.util.isBitSet(headerFlags, 0x0200)
+end
+
+function module.readHeaderFlagsIsRecursionDesired(headerFlags)
+  return module.util.isBitSet(headerFlags, 0x0100)
+end
+
+function module.readHeaderFlagsIsRecursionAvailable(headerFlags)
+  return module.util.isBitSet(headerFlags, 0x0080)
+end
+
+function module.readHeaderFlagsResponseCode(headerFlags)
+  return headerFlags % 0x0010
+end
+
+function module.readHeaderEntryCounts(message)
+  return module.readUInt16BE(message, 5),
+    module.readUInt16BE(message, 7),
+    module.readUInt16BE(message, 9),
+    module.readUInt16BE(message, 11)
+end
+
+function module.util.isBitSet(val, bit)
+  -- functionally identical to
+  --   (val & bit) != 0
+  -- just less efficient.
+  return (val % (bit + bit)) >= bit
 end
 
 return module

@@ -133,4 +133,28 @@ module.printerPtrResponse = {
   },
 }
 
+-- I'm not sure a response would ever look like this,
+-- but it's technically the right shape, if you disregard
+-- that all the records are empty.
+-- This should only be used for header tests.
+module.junkStatusResponseHeaderOnly = {
+  raw = "\190\239\151\129\000\002\000\002\000\001\000\003",
+  table = {
+    header = {
+      id = 0xbeef,
+      isResponse = true,
+      opCode = 0x02, -- STATUS
+      isAuthoritativeAnswer = true,
+      isTruncated = true,
+      isRecursionDesired = true,
+      isRecursionAvailable = true,
+      responseCode = 1, -- FORMAT_ERROR
+    },
+    questions = {{}, {}},
+    answers = {{}, {}},
+    nameServers = {{}},
+    additionalRecords = {{}, {}, {}},
+  }
+}
+
 return module
