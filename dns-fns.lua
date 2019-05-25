@@ -1,4 +1,4 @@
-local module = { util = {} }
+local module = {}
 
 -- TODO: Refactor to have functions as local vals rather than table members,
 -- then export them at the end.
@@ -9,6 +9,27 @@ local module = { util = {} }
 -- I've read though that table member access is slower than local access,
 -- which is one reason why to use locals over globals.
 
+
+
+-- ----------------
+-- Utility Functions
+-- ----------------
+
+
+
+--- Utility function to check if a bit is set.
+-- Used because Lua 5.1 doesn't have bitwise operators.
+-- NOTE: Can only check a single bit!
+-- @param val  Integer value to check bits of.
+-- @param bit  Integer value representing the single bit to check.
+-- @returns  Boolean indicating whether that bit is set or not.
+function module.isBitSet(val, bit)
+  -- functionally identical to
+  --   (val & bit) != 0
+  -- just less efficient.
+  return (val % (bit + bit)) >= bit
+end
+
 --- Reads two octets at the given position from the message,
 -- treating them as a big-endian (network-order) 16-bit unsigned int.
 -- @param message  The DNS Message as a String.
@@ -16,6 +37,14 @@ local module = { util = {} }
 function module.readUInt16BE(message, position)
   return message:byte(position) * 256 + message:byte(position + 1)
 end
+
+
+
+-- ----------------
+-- Scanning Functions
+-- ----------------
+
+
 
 --- Scans over the entire message, getting positions for all the entries.
 -- The Header is not included in this because its position is always 1.
@@ -133,6 +162,14 @@ function module.scanResourceRecord(message, position)
   return position + 2 + module.readUInt16BE(message, position)
 end
 
+
+
+-- ----------------
+-- Reading Functions: Header
+-- ----------------
+
+
+
 --- Reads the message ID from the header of the given message.
 -- @param message  The DNS Message as a String.
 -- @returns  The message ID as a UInt16.
@@ -154,7 +191,7 @@ end
 -- @param headerFlags  The header flags of a message as a UInt16.
 -- @returns  Boolean representing whether or not the message is a response.
 function module.readHeaderFlagsIsResponse(headerFlags)
-  return module.util.isBitSet(headerFlags, 0x8000)
+  return module.isBitSet(headerFlags, 0x8000)
 end
 
 --- Gets the message's op code from the message header flags.
@@ -168,28 +205,28 @@ end
 -- @param headerFlags  The header flags of a message as a UInt16.
 -- @returns  Boolean representing whether or not the message is an authoritative answer.
 function module.readHeaderFlagsIsAuthoritativeAnswer(headerFlags)
-  return module.util.isBitSet(headerFlags, 0x0400)
+  return module.isBitSet(headerFlags, 0x0400)
 end
 
 --- Checks if a message's header flags indicate it is truncated.
 -- @param headerFlags  The header flags of a message as a UInt16.
 -- @returns  Boolean representing whether or not the message is truncated.
 function module.readHeaderFlagsIsTruncated(headerFlags)
-  return module.util.isBitSet(headerFlags, 0x0200)
+  return module.isBitSet(headerFlags, 0x0200)
 end
 
 --- Checks if a message's header flags indicate recursion is desired.
 -- @param headerFlags  The header flags of a message as a UInt16.
 -- @returns  Boolean representing whether or not recursion is desired.
 function module.readHeaderFlagsIsRecursionDesired(headerFlags)
-  return module.util.isBitSet(headerFlags, 0x0100)
+  return module.isBitSet(headerFlags, 0x0100)
 end
 
 --- Checks if a message's header flags indicate recursion is available.
 -- @param headerFlags  The header flags of a message as a UInt16.
 -- @returns  Boolean representing whether or not recursion is available.
 function module.readHeaderFlagsIsRecursionAvailable(headerFlags)
-  return module.util.isBitSet(headerFlags, 0x0080)
+  return module.isBitSet(headerFlags, 0x0080)
 end
 
 --- Gets the message's response code from the message header flags.
@@ -209,19 +246,6 @@ function module.readHeaderEntryCounts(message)
     module.readUInt16BE(message, 7),
     module.readUInt16BE(message, 9),
     module.readUInt16BE(message, 11)
-end
-
---- Utility function to check if a bit is set.
--- Used because Lua 5.1 doesn't have bitwise operators.
--- NOTE: Can only check a single bit!
--- @param val  Integer value to check bits of.
--- @param bit  Integer value representing the single bit to check.
--- @returns  Boolean indicating whether that bit is set or not.
-function module.util.isBitSet(val, bit)
-  -- functionally identical to
-  --   (val & bit) != 0
-  -- just less efficient.
-  return (val % (bit + bit)) >= bit
 end
 
 return module
