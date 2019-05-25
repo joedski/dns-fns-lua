@@ -9,27 +9,27 @@ function TestDnsFnsScan.test_scanDomainName()
   local cases = {
     {
       message = testData.printerPtrRequest.raw,
-      questionPosition = testData.printerPtrRequest.table.questions[1].offset + 1,
-      questionAttributesPosition = testData.printerPtrRequest.table.questions[1].attributesOffset + 1,
+      entryPosition = testData.printerPtrRequest.table.questions[1].offset + 1,
+      entryAttributesPosition = testData.printerPtrRequest.table.questions[1].attributesOffset + 1,
     },
     -- These two are fun because each one's name is literally just a pointer.
     {
       message = testData.printerPtrResponse.raw,
-      questionPosition = testData.printerPtrResponse.table.answers[1].offset + 1,
-      questionAttributesPosition = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+      entryPosition = testData.printerPtrResponse.table.answers[1].offset + 1,
+      entryAttributesPosition = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
     },
     {
       message = testData.printerPtrResponse.raw,
-      questionPosition = testData.printerPtrResponse.table.additionalRecords[2].offset + 1,
-      questionAttributesPosition = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
+      entryPosition = testData.printerPtrResponse.table.additionalRecords[2].offset + 1,
+      entryAttributesPosition = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
     },
   }
 
   for i, testCase in ipairs(cases) do
     lu.assertEquals(
-      dnsFns.scanDomainName(testCase.message, testCase.questionPosition),
-      testCase.questionAttributesPosition,
-      "Expected case #"..i.." to match attributes position "..testCase.questionAttributesPosition
+      dnsFns.scanDomainName(testCase.message, testCase.entryPosition),
+      testCase.entryAttributesPosition,
+      "Case #"..i
     )
   end
 end
@@ -38,16 +38,16 @@ function TestDnsFnsScan.test_scanQuestion()
   local cases = {
     {
       message = testData.printerPtrResponse.raw,
-      questionPosition = testData.printerPtrResponse.table.questions[1].offset + 1,
+      entryPosition = testData.printerPtrResponse.table.questions[1].offset + 1,
       nextItemPosition = testData.printerPtrResponse.table.answers[1].offset + 1,
     }
   }
 
   for i, testCase in ipairs(cases) do
     lu.assertEquals(
-      dnsFns.scanQuestion(testCase.message, testCase.questionPosition),
+      dnsFns.scanQuestion(testCase.message, testCase.entryPosition),
       testCase.nextItemPosition,
-      "Expected case #"..i.." to match next item position "..testCase.nextItemPosition
+      "Case #"..i
     )
   end
 end
@@ -70,7 +70,7 @@ function TestDnsFnsScan.test_scanResourceRecord()
     lu.assertEquals(
       dnsFns.scanResourceRecord(testCase.message, testCase.recordPosition),
       testCase.nextRecordPosition,
-      "Expected case #"..i.." to match next record position "..testCase.nextRecordPosition
+      "Case #"..i
     )
   end
 end
@@ -108,7 +108,7 @@ function TestDnsFnsScan.test_scanPositions()
     lu.assertEquals(
       dnsFns.scanPositions(testCase.message),
       testCase.result,
-      "Expected case #"..i.." to match"
+      "Case #"..i
     )
   end
 end
