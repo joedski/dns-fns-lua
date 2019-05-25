@@ -9,16 +9,21 @@ local module = { util = {} }
 -- I've read though that table member access is slower than local access,
 -- which is one reason why to use locals over globals.
 
+--- Reads two octets at the given position from the message,
+-- treating them as a big-endian (network-order) 16-bit unsigned int.
+-- @param message  The DNS Message as a String.
+-- @returns  UInt16 from the two octets at position and position + 1.
 function module.readUInt16BE(message, position)
   return message:byte(position) * 256 + message:byte(position + 1)
 end
 
---- scanPositions
--- Scans over the entire message, getting positions for all the entries.
+--- Scans over the entire message, getting positions for all the entries.
 -- The Header is not included in this because its position is always 1.
--- @param message The DNS Message as a String.
--- @returns Array of numbers representing the start-positions of each thing.
---   Note that you'll need the item-counts of each section to make full sense of it.
+-- @param message  The DNS Message as a String.
+-- @returns  Mixed array whose positional elements are the positions of each
+--   entry in the DNS Message after the header, and whose named elements
+--   are each of the entry counts:
+--   "questionCount", "answerCount", "nameServerCount", and "additionalRecordCount".
 function module.scanPositions(message)
   -- TODO: Error checking!  Size checking!  Other validations!
 
@@ -73,14 +78,20 @@ function module.scanPositions(message)
   return result
 end
 
---- Returns the next position after the question at the given position.
+--- Get the next position after the question at the given position.
+-- @param message  The DNS Message as a String.
+-- @param position  Position of the question to scan past.
+-- @returns  Next position after the given question.
 function module.scanQuestion(message, position)
   -- A question is a name followed by 2 UInt16's.
   position = module.scanDomainName(message, position)
   return position + 4
 end
 
---- Returns the next position after the domain name at the given position.
+--- Get the next position after a domain name field.
+-- @param message  The DNS Message as a String.
+-- @param position  Position of the domain name to scan past.
+-- @returns  Next position after the given domain name.
 function module.scanDomainName(message, position)
   local length = message:byte(position)
   local lengthFlag
@@ -110,7 +121,10 @@ function module.scanDomainName(message, position)
   return position + 1
 end
 
---- Returns the next position after the resource record at the given position.
+--- Get the next position after a resource record.
+-- @param message  The DNS Message as a String.
+-- @param position  Position of the resource record to scan past.
+-- @returns  Next position after the given resource record.
 function module.scanResourceRecord(message, position)
   -- UInt16 Type + UIint16 Class + UInt32 TTL = 8 octets.
   position = module.scanDomainName(message, position) + 8
@@ -119,42 +133,77 @@ function module.scanResourceRecord(message, position)
   return position + 2 + module.readUInt16BE(message, position)
 end
 
+--- Reads the message ID from the header of the given message.
+-- @param message  The DNS Message as a String.
+-- @returns  The message ID as a UInt16.
 function module.readHeaderId(message)
   return module.readUInt16BE(message, 1)
 end
 
+--- Reads all the header flags as a single UInt16 from the header.
+-- Includes the op code and response code as part of it.
+-- Use the various "readHeaderFlags*" functions to extract
+-- parts relevant to your usage.
+-- @param message  The DNS Message as a String.
+-- @returns  UInt16 representing the two octets of flags and codes.
 function module.readHeaderFlags(message)
   return module.readUInt16BE(message, 3)
 end
 
+--- Checks if a message's header flags indicate it is a response.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  Boolean representing whether or not the message is a response.
 function module.readHeaderFlagsIsResponse(headerFlags)
   return module.util.isBitSet(headerFlags, 0x8000)
 end
 
+--- Gets the message's op code from the message header flags.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  The op code as an integer.
 function module.readHeaderFlagsOpCode(headerFlags)
   return ((headerFlags % 0x8000) - (headerFlags % 0x0800)) / 0x0800
 end
 
+--- Checks if a message's header flags indicate it is an authoritative answer.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  Boolean representing whether or not the message is an authoritative answer.
 function module.readHeaderFlagsIsAuthoritativeAnswer(headerFlags)
   return module.util.isBitSet(headerFlags, 0x0400)
 end
 
+--- Checks if a message's header flags indicate it is truncated.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  Boolean representing whether or not the message is truncated.
 function module.readHeaderFlagsIsTruncated(headerFlags)
   return module.util.isBitSet(headerFlags, 0x0200)
 end
 
+--- Checks if a message's header flags indicate recursion is desired.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  Boolean representing whether or not recursion is desired.
 function module.readHeaderFlagsIsRecursionDesired(headerFlags)
   return module.util.isBitSet(headerFlags, 0x0100)
 end
 
+--- Checks if a message's header flags indicate recursion is available.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  Boolean representing whether or not recursion is available.
 function module.readHeaderFlagsIsRecursionAvailable(headerFlags)
   return module.util.isBitSet(headerFlags, 0x0080)
 end
 
+--- Gets the message's response code from the message header flags.
+-- @param headerFlags  The header flags of a message as a UInt16.
+-- @returns  The response code as an integer.
 function module.readHeaderFlagsResponseCode(headerFlags)
   return headerFlags % 0x0010
 end
 
+--- Gets the entry counts of each section from the header.
+-- @param message  The DNS Message as a String.
+-- @returns  Four numbers representing, in order,
+--   the number of questions, the number of answers,
+--   the number of name-server RRs, and the number of additional records.
 function module.readHeaderEntryCounts(message)
   return module.readUInt16BE(message, 5),
     module.readUInt16BE(message, 7),
@@ -162,6 +211,12 @@ function module.readHeaderEntryCounts(message)
     module.readUInt16BE(message, 11)
 end
 
+--- Utility function to check if a bit is set.
+-- Used because Lua 5.1 doesn't have bitwise operators.
+-- NOTE: Can only check a single bit!
+-- @param val  Integer value to check bits of.
+-- @param bit  Integer value representing the single bit to check.
+-- @returns  Boolean indicating whether that bit is set or not.
 function module.util.isBitSet(val, bit)
   -- functionally identical to
   --   (val & bit) != 0
