@@ -25,6 +25,7 @@ module.printerPtrRequest = {
         type = 12,
         class = 1,
         offset = 12,
+        attributesOffset = 12 + 21,
       }
     },
     answers = {},
@@ -56,6 +57,7 @@ module.printerPtrResponse = {
         type = 12,
         class = 1,
         offset = 12,
+        attributesOffset = 12 + 21,
       }
     },
     -- It's not required that any particular section or record/entry be an even number of octets.
@@ -70,6 +72,7 @@ module.printerPtrResponse = {
         dataRaw = '\020\069\080\083\079\078\032\087\080\045\052\053\051\048\032\083\101\114\105\101\115\192\012',
         -- domainName = "EPSON WP-4530 Series._printer._tcp.local."
         offset = 37,
+        attributesOffset = 39,
         recordDataOffset = 49,
       }
     },
@@ -87,6 +90,8 @@ module.printerPtrResponse = {
         -- 0000.0000.0203.0b=4550534f4e373342354541.c01a
         -- uint16 Priority, uint16 Weight, uint16 Port, domain-name Target
         offset = 72,
+        -- This name is also only a pointer because it points at the RDATA of answers[1].
+        attributesOffset = 74,
         recordDataOffset = 84,
       },
       {
@@ -109,6 +114,7 @@ module.printerPtrResponse = {
         },
         dataRaw = "\009\116\120\116\118\101\114\115\061\049\011\112\114\105\111\114\105\116\121\061\053\048\023\116\121\061\069\080\083\079\078\032\087\080\045\052\053\051\048\032\083\101\114\105\101\115\013\117\115\098\095\077\070\071\061\069\080\083\079\078\022\117\115\098\095\077\068\076\061\087\080\045\052\053\051\048\032\083\101\114\105\101\115\030\112\114\111\100\117\099\116\061\040\069\080\083\079\078\032\087\080\045\052\053\051\048\032\083\101\114\105\101\115\041\007\112\100\108\061\114\097\119\007\114\112\061\097\117\116\111\008\113\116\111\116\097\108\061\049\058\097\100\109\105\110\117\114\108\061\104\116\116\112\058\047\047\069\080\083\079\078\055\051\066\053\069\065\046\108\111\099\097\108\046\058\056\048\047\080\082\069\083\069\078\084\065\084\073\079\078\047\066\079\078\074\079\085\082\005\110\111\116\101\061\000",
         offset = 104,
+        attributesOffset = 106,
         recordDataOffset = 116,
       },
       {
@@ -119,8 +125,12 @@ module.printerPtrResponse = {
         dataRaw = "\192\168\200\101",
         address = "192.168.200.101",
         offset = 321,
+        -- This record's name is also only a pointer because it points at somewhere in additionalRecords[2]'s RDATA.
+        attributesOffset = 323,
         recordDataOffset = 333,
       },
     },
   },
 }
+
+return module
