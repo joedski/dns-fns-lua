@@ -157,4 +157,49 @@ module.junkStatusResponseHeaderOnly = {
   }
 }
 
+module.datamunchAddressRequest = {
+  raw = "\190\239\132\000\000\001\000\001\000\000\000\000\009\100\097\116\097\109\117\110\099\104\005\108\111\099\097\108\000\000\001\000\001\192\012\000\001\000\001\000\000\000\010\000\004\192\168\200\073",
+  table = {
+    header = {
+      id = 48879,
+      isResponse = true,
+      opCode = 0,
+      isAuthoritativeAnswer = true,
+      isTruncated = false,
+      isRecursionDesired = false,
+      isRecursionAvailable = false,
+      responseCode = 0
+    },
+    questions = {
+      {
+        name = "datamunch.local.",
+        type = 1,
+        class = 1,
+        offset = 12,
+        attributesOffset = 29,
+      }
+    },
+    answers = {
+      {
+        name = "datamunch.local.",
+        type = 1,
+        class = 1,
+        ttl = 10,
+        dataRaw = "\192\168\200\073",
+        -- address = "192.168.200.73",
+        offset = 33,
+        attributesOffset = 35,
+        recordDataOffset = 45,
+      }
+    },
+    nameServers = {},
+    additionalRecords = {},
+    -- Offsets!
+    questionsOffset = 12,
+    answersOffset = 33,
+    nameServersOffset = 49,
+    additionalRecordsOffset = 49
+  }
+}
+
 return module
