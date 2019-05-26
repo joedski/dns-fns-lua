@@ -307,4 +307,12 @@ function module.readDomainName(message, position)
   return nameParts, position + 1
 end
 
+function module.readQuestionType(message, attributesPosition)
+  return module.readUInt16BE(message, attributesPosition)
+end
+
+function module.readQuestionClass(message, attributesPosition)
+  return module.readUInt16BE(message, attributesPosition + 2)
+end
+
 return module

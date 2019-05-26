@@ -273,3 +273,51 @@ function TestDnsFnsRead.test_readDomainName()
     )
   end
 end
+
+function TestDnsFnsRead.test_readQuestionType()
+  local cases = {
+    {
+      message = testData.printerPtrRequest.raw,
+      position = testData.printerPtrRequest.table.questions[1].attributesOffset + 1,
+      type = testData.printerPtrRequest.table.questions[1].type,
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.questions[1].attributesOffset + 1,
+      type = testData.datamunchAddressResponse.table.questions[1].type,
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local type = dnsFns.readQuestionType(testCase.message, testCase.position)
+    lu.assertEquals(
+      type,
+      testCase.type,
+      "Case #"..i
+    )
+  end
+end
+
+function TestDnsFnsRead.test_readQuestionClass()
+  local cases = {
+    {
+      message = testData.printerPtrRequest.raw,
+      position = testData.printerPtrRequest.table.questions[1].attributesOffset + 1,
+      class = testData.printerPtrRequest.table.questions[1].class,
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.questions[1].attributesOffset + 1,
+      class = testData.datamunchAddressResponse.table.questions[1].class,
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local type = dnsFns.readQuestionClass(testCase.message, testCase.position)
+    lu.assertEquals(
+      type,
+      testCase.class,
+      "Case #"..i
+    )
+  end
+end

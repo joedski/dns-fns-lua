@@ -157,7 +157,7 @@ module.junkStatusResponseHeaderOnly = {
   }
 }
 
-module.datamunchAddressRequest = {
+module.datamunchAddressResponse = {
   raw = "\190\239\132\000\000\001\000\001\000\000\000\000\009\100\097\116\097\109\117\110\099\104\005\108\111\099\097\108\000\000\001\000\001\192\012\000\001\000\001\000\000\000\010\000\004\192\168\200\073",
   table = {
     header = {
