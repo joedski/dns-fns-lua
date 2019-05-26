@@ -241,3 +241,35 @@ function TestDnsFnsRead.test_readHeaderEntryCounts()
     )
   end
 end
+
+
+
+function TestDnsFnsRead.test_readDomainName()
+  -- the :sub(1, -2) is to strip off the terminal dot.
+  local cases = {
+    {
+      message = testData.printerPtrRequest.raw,
+      position = testData.printerPtrRequest.table.questions[1].offset + 1,
+      domainName = testData.printerPtrRequest.table.questions[1].name:sub(1, -2),
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.answers[1].offset + 1,
+      domainName = testData.printerPtrResponse.table.answers[1].name:sub(1, -2),
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[1].offset + 1,
+      domainName = testData.printerPtrResponse.table.additionalRecords[1].name:sub(1, -2),
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local nameParts = dnsFns.readDomainName(testCase.message, testCase.position)
+    lu.assertEquals(
+      table.concat(nameParts, '.'),
+      testCase.domainName,
+      "Case #"..i
+    )
+  end
+end

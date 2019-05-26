@@ -39,14 +39,19 @@ function TestDnsFnsScan.test_scanQuestion()
     {
       message = testData.printerPtrResponse.raw,
       entryPosition = testData.printerPtrResponse.table.questions[1].offset + 1,
-      nextItemPosition = testData.printerPtrResponse.table.answers[1].offset + 1,
+      resultPositions = {
+        testData.printerPtrResponse.table.questions[1].attributesOffset + 1,
+        testData.printerPtrResponse.table.answers[1].offset + 1,
+      },
     }
   }
 
   for i, testCase in ipairs(cases) do
+    local result = {}
+    result[1], result[2] = dnsFns.scanQuestion(testCase.message, testCase.entryPosition)
     lu.assertEquals(
-      dnsFns.scanQuestion(testCase.message, testCase.entryPosition),
-      testCase.nextItemPosition,
+      result,
+      testCase.resultPositions,
       "Case #"..i
     )
   end
@@ -56,20 +61,28 @@ function TestDnsFnsScan.test_scanResourceRecord()
   local cases = {
     {
       message = testData.printerPtrResponse.raw,
-      recordPosition = testData.printerPtrResponse.table.answersOffset + 1,
-      nextRecordPosition = testData.printerPtrResponse.table.nameServersOffset + 1,
+      recordPosition = testData.printerPtrResponse.table.answers[1].offset + 1,
+      resultPositions = {
+        testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+        testData.printerPtrResponse.table.nameServersOffset + 1,
+      }
     },
     {
       message = testData.printerPtrResponse.raw,
-      recordPosition = testData.printerPtrResponse.table.additionalRecordsOffset + 1,
-      nextRecordPosition = testData.printerPtrResponse.table.additionalRecords[2].offset + 1,
+      recordPosition = testData.printerPtrResponse.table.additionalRecords[1].offset + 1,
+      resultPositions = {
+        testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
+        testData.printerPtrResponse.table.additionalRecords[2].offset + 1,
+      }
     },
   }
 
   for i, testCase in ipairs(cases) do
+    local result = {}
+    result[1], result[2] = dnsFns.scanResourceRecord(testCase.message, testCase.recordPosition)
     lu.assertEquals(
-      dnsFns.scanResourceRecord(testCase.message, testCase.recordPosition),
-      testCase.nextRecordPosition,
+      result,
+      testCase.resultPositions,
       "Case #"..i
     )
   end
@@ -81,6 +94,7 @@ function TestDnsFnsScan.test_scanPositions()
       message = testData.printerPtrRequest.raw,
       result = {
         testData.printerPtrResponse.table.questions[1].offset + 1,
+        testData.printerPtrResponse.table.questions[1].attributesOffset + 1,
         questionCount = 1,
         answerCount = 0,
         nameServerCount = 0,
@@ -91,11 +105,16 @@ function TestDnsFnsScan.test_scanPositions()
       message = testData.printerPtrResponse.raw,
       result = {
         testData.printerPtrResponse.table.questions[1].offset + 1,
+        testData.printerPtrResponse.table.questions[1].attributesOffset + 1,
         testData.printerPtrResponse.table.answers[1].offset + 1,
+        testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
         -- no nameServers
         testData.printerPtrResponse.table.additionalRecords[1].offset + 1,
+        testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
         testData.printerPtrResponse.table.additionalRecords[2].offset + 1,
+        testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
         testData.printerPtrResponse.table.additionalRecords[3].offset + 1,
+        testData.printerPtrResponse.table.additionalRecords[3].attributesOffset + 1,
         questionCount = 1,
         answerCount = 1,
         nameServerCount = 0,

@@ -47,10 +47,16 @@ end
 
 
 --- Scans over the entire message, getting positions for all the entries.
+-- and their attributes, pair wise.  That is, item 1 will be the position of the
+-- first entry, item 2 will be the position of the first entry's attributes
+-- which come after its name.  Item 3 will be the position of the next entry,
+-- and item 4 will be the position of the next entry's attributes which come after
+-- its own name.  So on, and so forth.
+--
 -- The Header is not included in this because its position is always 1.
 -- @param message  The DNS Message as a String.
--- @returns  Mixed array whose positional elements are the positions of each
---   entry in the DNS Message after the header, and whose named elements
+-- @returns  Mixed array whose positional elements pairs of entry and entry-attributes
+--   positions in the DNS Message, and whose named elements
 --   are each of the entry counts:
 --   "questionCount", "answerCount", "nameServerCount", and "additionalRecordCount".
 function module.scanPositions(message)
@@ -77,28 +83,31 @@ function module.scanPositions(message)
     return result
   end
 
-  local currentPosition = 13
-  result[#result + 1] = currentPosition
+  local currentNamePosition = 13
+  local currentAttributesPosition
+  result[#result + 1] = currentNamePosition
 
   while questionCount > 0 do
-    currentPosition = module.scanQuestion(message, currentPosition)
+    currentAttributesPosition, currentNamePosition = module.scanQuestion(message, currentNamePosition)
+    result[#result + 1] = currentAttributesPosition
 
-    if currentPosition > message:len() then
+    if currentNamePosition > message:len() then
       return result
     end
 
-    result[#result + 1] = currentPosition
+    result[#result + 1] = currentNamePosition
     questionCount = questionCount - 1
   end
 
   while resourceRecordCount > 0 do
-    currentPosition = module.scanResourceRecord(message, currentPosition)
+    currentAttributesPosition, currentNamePosition = module.scanResourceRecord(message, currentNamePosition)
+    result[#result + 1] = currentAttributesPosition
 
-    if currentPosition > message:len() then
+    if currentNamePosition > message:len() then
       return result
     end
 
-    result[#result + 1] = currentPosition
+    result[#result + 1] = currentNamePosition
     resourceRecordCount = resourceRecordCount - 1
   end
 
@@ -110,11 +119,12 @@ end
 --- Get the next position after the question at the given position.
 -- @param message  The DNS Message as a String.
 -- @param position  Position of the question to scan past.
--- @returns  Next position after the given question.
+-- @returns  Next position after the given question's domain name,
+--   then the next position after given question's attributes.
 function module.scanQuestion(message, position)
   -- A question is a name followed by 2 UInt16's.
   position = module.scanDomainName(message, position)
-  return position + 4
+  return position, position + 4
 end
 
 --- Get the next position after a domain name field.
@@ -153,13 +163,15 @@ end
 --- Get the next position after a resource record.
 -- @param message  The DNS Message as a String.
 -- @param position  Position of the resource record to scan past.
--- @returns  Next position after the given resource record.
+-- @returns  Next position after the given record's domain name,
+--   then the next position after given records's attributes and rdata.
 function module.scanResourceRecord(message, position)
+  position = module.scanDomainName(message, position)
   -- UInt16 Type + UIint16 Class + UInt32 TTL = 8 octets.
-  position = module.scanDomainName(message, position) + 8
+  -- Another 2 octets from the UInt16 of the Record Data Length field = 10 octets.
   -- Now we should be at the Record Data Length field.
   -- Add 2 to skip it, since it's a UInt16.
-  return position + 2 + module.readUInt16BE(message, position)
+  return position, position + 10 + module.readUInt16BE(message, position + 8)
 end
 
 
@@ -246,6 +258,53 @@ function module.readHeaderEntryCounts(message)
     module.readUInt16BE(message, 7),
     module.readUInt16BE(message, 9),
     module.readUInt16BE(message, 11)
+end
+
+
+
+-- ----------------
+-- Reading Functions: Entries
+-- ----------------
+
+
+
+--- Reads a domain name at a given position.
+-- Note that both Questions and Resource Records start with the Domain Name,
+-- so the position of a Question or Resource Record can be treated as the same as the
+-- position of a Domain Name.  Domain Names can appear in RData fields, too, of course.
+-- @param message  The DNS Message as a String.
+-- @param position  Position of the first length-field of a Domain Name.
+-- @returns  Array of Name Parts in the Domain Name, _not_ including the last
+--   zero-length Name Part.
+function module.readDomainName(message, position)
+  local nameParts = {}
+  local length = message:byte(position)
+  local lengthFlag
+
+  while length ~= 0 do
+    if length >= 0x40 then
+      lengthFlag = length - (length % 0x40)
+
+      if lengthFlag == 0xc0 then
+        -- 0b11 means do a jumpyjump.
+        -- +1 because lua is 1-indexed.
+        position = (module.readUInt16BE(message, position) % 0x4000) + 1
+        length = message:byte(position)
+      else
+        -- I'm not sure if 0b01 or 0b10 are actually defined, yet.
+        -- A haven't felt like trawling the rest of the RFCs. (there's a lot of them)
+        position = position + 1
+        break
+      end
+    else
+      -- Read the octet sequence, then skip to the next length field
+      table.insert(nameParts, message:sub(position + 1, position + length))
+      position = position + length + 1
+      length = message:byte(position)
+    end
+  end -- while length ~= 0
+
+  return nameParts, position + 1
 end
 
 return module
