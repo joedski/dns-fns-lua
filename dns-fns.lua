@@ -394,4 +394,34 @@ function module.readRecordDataAsIpv6AddressString(message, attributesPosition)
   return module.stripZerosRunFromIpv6AddressString(fullString)
 end
 
+function module.readRecordDataAsDomainName(message, attributesPosition)
+  local dataLength = module.readRecordDataLength(message, attributesPosition)
+  -- TODO: Validate dataLength doesn't exceed the allow domain name length?
+  -- Or is that too complicated with pointers?
+  local dataPosition = attributesPosition + 10
+
+  return module.readDomainName(message, dataPosition)
+end
+
+function module.readRecordDataAsCharacterStrings(message, attributesPosition)
+  local dataLength = module.readRecordDataLength(message, attributesPosition)
+  local dataPosition = attributesPosition + 10
+
+  local characterStrings = {}
+  local stringLength = message:byte(dataPosition)
+
+  while stringLength ~= 0 do
+    -- TODO: Validate we have enough message left to read.
+    table.insert(
+      characterStrings,
+      message:sub(dataPosition + 1, dataPosition + stringLength)
+    )
+
+    dataPosition = dataPosition + stringLength + 1
+    stringLength = message:byte(dataPosition)
+  end
+
+  return characterStrings
+end
+
 return module

@@ -321,3 +321,7 @@ function TestDnsFnsRead.test_readQuestionClass()
     )
   end
 end
+
+function TestDnsFnsRead.test_anyReadRecordFunctions()
+  error("Implement me!")
+end
