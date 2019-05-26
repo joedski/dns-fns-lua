@@ -3,6 +3,7 @@
 
 local lu = require('tests/luaunit')
 
+require('tests/dns-fns-util-test')
 require('tests/dns-fns-scan-test')
 require('tests/dns-fns-read-test')
 

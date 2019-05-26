@@ -38,6 +38,31 @@ function module.readUInt16BE(message, position)
   return message:byte(position) * 256 + message:byte(position + 1)
 end
 
+-- ":0:" is never truncated.
+local ipv6ZeroRuns = { '0:0:0:0:0:0:0:0', '0:0:0:0:0:0:0', '0:0:0:0:0:0', '0:0:0:0:0', '0:0:0:0', '0:0:0', '0:0' }
+
+--- Strip the longest run of zeros in an IPv6 address
+function module.stripZerosRunFromIpv6AddressString(fullString)
+  local shortened
+
+  for i = 1, #ipv6ZeroRuns do
+    shortened = fullString:gsub(ipv6ZeroRuns[i], '')
+    if shortened ~= fullString then
+      if shortened:len() == 0 then
+        return "::"
+      elseif shortened:match(':$') then
+        return shortened..":"
+      elseif shortened:match('^:') then
+        return ":"..shortened
+      else
+        return shortened
+      end
+    end
+  end
+
+  return fullString
+end
+
 
 
 -- ----------------
@@ -313,6 +338,60 @@ end
 
 function module.readQuestionClass(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition + 2)
+end
+
+function module.readRecordType(message, attributesPosition)
+  return module.readUInt16BE(message, attributesPosition)
+end
+
+function module.readRecordClass(message, attributesPosition)
+  return module.readUInt16BE(message, attributesPosition + 2)
+end
+
+function module.readRecordTtl(message, attributesPosition)
+  return module.readUInt16BE(message, attributesPosition + 4) * 65536 +
+    module.readUInt16BE(message, attributesPosition + 6)
+end
+
+function module.readRecordDataLength(message, attributesPosition)
+  return module.readUInt16BE(message, attributesPosition + 8)
+end
+
+function module.readRecordDataAsRawString(message, attributesPosition)
+  local dataLength = module.readRecordDataLength(message, attributesPosition)
+  local dataPosition = attributesPosition + 10
+  return message:sub(dataPosition, dataPosition + dataLength - 1)
+end
+
+function module.readRecordDataAsIpv4AddressString(message, attributesPosition)
+  local dataLength = module.readRecordDataLength(message, attributesPosition)
+  -- TODO: Validate data length?  (Should be 4)
+  local dataPosition = attributesPosition + 10
+  return string.format(
+    '%d.%d.%d.%d',
+    message:byte(dataPosition),
+    message:byte(dataPosition + 1),
+    message:byte(dataPosition + 2),
+    message:byte(dataPosition + 3)
+  )
+end
+
+function module.readRecordDataAsIpv6AddressString(message, attributesPosition)
+  local dataLength = module.readRecordDataLength(message, attributesPosition)
+  -- TODO: Validate data length?  (should be 16)
+  local dataPosition = attributesPosition + 10
+  local fullString = table.concat({
+    string.format('%x', module.readUInt16BE(message, dataPosition)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 2)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 4)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 6)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 8)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 10)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 12)),
+    string.format('%x', module.readUInt16BE(message, dataPosition + 14)),
+  }, ':')
+
+  return module.stripZerosRunFromIpv6AddressString(fullString)
 end
 
 return module
