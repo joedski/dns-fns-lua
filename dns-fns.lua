@@ -332,37 +332,82 @@ function module.readDomainName(message, position)
   return nameParts, position + 1
 end
 
+--- Reads the Type field of a Question at the given Question's attributes' position.
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Question's Name field, where the first attribute starts.
+-- @returns  The Question Type as a UInt16.
 function module.readQuestionType(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition)
 end
 
+--- Reads the Class field of a Question at the given Question's attributes' position.
+-- This is almost always going to be `1` for Internet, but eh,
+-- you can read it anyway?
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Question's Name field, where the first attribute starts.
+-- @returns  The Question Type as a UInt16.
 function module.readQuestionClass(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition + 2)
 end
 
+--- Reads the Type field of a Resource Record at
+-- the given Resource Record's attributes' position.
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The Resource Record Type as a UInt16.
 function module.readRecordType(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition)
 end
 
+--- Reads the Class field of a Resource Record at
+-- the given Resource Record's attributes' position.
+-- This is almost always going to be `1` for Internet, but eh,
+-- you can read it anyway?
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The Resource Record Type as a UInt16.
 function module.readRecordClass(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition + 2)
 end
 
+--- Reads the TTL field of a Resource Record at
+-- the given Resource Record's attributes' position.
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The Resource Record TTL in seconds as a UInt32.
 function module.readRecordTtl(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition + 4) * 65536 +
     module.readUInt16BE(message, attributesPosition + 6)
 end
 
+--- Reads the Data Length field of a Resource Record at
+-- the given Resource Record's attributes' position.
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The number of octets the Record Data takes up as a UInt16.
 function module.readRecordDataLength(message, attributesPosition)
   return module.readUInt16BE(message, attributesPosition + 8)
 end
 
+--- Reads the Record Data as a raw string of octets.
+-- Probably not useful, but sometimes you just want the data itself.
+-- Usually, though, a more specific Record Data Reader should be used.
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The Record Data as a raw string of octets.
 function module.readRecordDataAsRawString(message, attributesPosition)
   local dataLength = module.readRecordDataLength(message, attributesPosition)
   local dataPosition = attributesPosition + 10
   return message:sub(dataPosition, dataPosition + dataLength - 1)
 end
 
+--- Reads the Record Data as an IPv4 Address String,
+-- formatting it into the customary textual expression.
+--
+-- Use this with the Record Type A (1).
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The Record Data formatted as an IPv4 Address String.
 function module.readRecordDataAsIpv4AddressString(message, attributesPosition)
   local dataLength = module.readRecordDataLength(message, attributesPosition)
   -- TODO: Validate data length?  (Should be 4)
@@ -376,6 +421,15 @@ function module.readRecordDataAsIpv4AddressString(message, attributesPosition)
   )
 end
 
+--- Reads the Record Data as an IPv6 Address String,
+-- formatting it into the customary textual expression,
+-- with leading 0's truncated, as well as the largest contiguous
+-- run of 0-hextets truncated to "::".
+--
+-- Use this with the Record Type AAAA (28).
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  The Record Data formatted as an IPv6 Address String.
 function module.readRecordDataAsIpv6AddressString(message, attributesPosition)
   local dataLength = module.readRecordDataLength(message, attributesPosition)
   -- TODO: Validate data length?  (should be 16)
@@ -394,6 +448,12 @@ function module.readRecordDataAsIpv6AddressString(message, attributesPosition)
   return module.stripZerosRunFromIpv6AddressString(fullString)
 end
 
+--- Reads the Record Data as a Domain Name.
+--
+-- Use this with the Record Types NS (2), PTR (12), CNAME (5), ... others.
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  Array of Domain Name parts.
 function module.readRecordDataAsDomainName(message, attributesPosition)
   local dataLength = module.readRecordDataLength(message, attributesPosition)
   -- TODO: Validate dataLength doesn't exceed the allow domain name length?
@@ -403,6 +463,13 @@ function module.readRecordDataAsDomainName(message, attributesPosition)
   return module.readDomainName(message, dataPosition)
 end
 
+--- Reads the Record Data as a series of Character Strings.
+--
+-- Use this with the Record Type TXT (16)
+-- @param message  The DNS Message as a String.
+-- @param attributesPosition  The position after the Resource Record's Name field, where the first attribute starts.
+-- @returns  Array of Character Strings, which is really just an array of strings.
+--   Do with them what you will.
 function module.readRecordDataAsCharacterStrings(message, attributesPosition)
   local dataLength = module.readRecordDataLength(message, attributesPosition)
   local dataPosition = attributesPosition + 10
