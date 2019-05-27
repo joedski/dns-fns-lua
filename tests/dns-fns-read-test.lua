@@ -322,6 +322,197 @@ function TestDnsFnsRead.test_readQuestionClass()
   end
 end
 
-function TestDnsFnsRead.test_anyReadRecordFunctions()
-  error("Implement me!")
+function TestDnsFnsRead.test_readRecordType()
+  local cases = {
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+      type = testData.printerPtrResponse.table.answers[1].type,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
+      type = testData.printerPtrResponse.table.additionalRecords[1].type,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
+      type = testData.printerPtrResponse.table.additionalRecords[2].type,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[3].attributesOffset + 1,
+      type = testData.printerPtrResponse.table.additionalRecords[3].type,
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.answers[1].attributesOffset + 1,
+      type = testData.datamunchAddressResponse.table.answers[1].type,
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local type = dnsFns.readRecordType(testCase.message, testCase.position)
+    lu.assertEquals(
+      type,
+      testCase.type,
+      "Case #"..i
+    )
+  end
+end
+
+function TestDnsFnsRead.test_readRecordClass()
+  local cases = {
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+      class = testData.printerPtrResponse.table.answers[1].class,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
+      class = testData.printerPtrResponse.table.additionalRecords[1].class,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
+      class = testData.printerPtrResponse.table.additionalRecords[2].class,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[3].attributesOffset + 1,
+      class = testData.printerPtrResponse.table.additionalRecords[3].class,
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.answers[1].attributesOffset + 1,
+      class = testData.datamunchAddressResponse.table.answers[1].class,
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local type = dnsFns.readRecordClass(testCase.message, testCase.position)
+    lu.assertEquals(
+      type,
+      testCase.class,
+      "Case #"..i
+    )
+  end
+end
+
+function TestDnsFnsRead.test_readRecordTtl()
+  local cases = {
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+      ttl = testData.printerPtrResponse.table.answers[1].ttl,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
+      ttl = testData.printerPtrResponse.table.additionalRecords[1].ttl,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
+      ttl = testData.printerPtrResponse.table.additionalRecords[2].ttl,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[3].attributesOffset + 1,
+      ttl = testData.printerPtrResponse.table.additionalRecords[3].ttl,
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.answers[1].attributesOffset + 1,
+      ttl = testData.datamunchAddressResponse.table.answers[1].ttl,
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local type = dnsFns.readRecordTtl(testCase.message, testCase.position)
+    lu.assertEquals(
+      type,
+      testCase.ttl,
+      "Case #"..i
+    )
+  end
+end
+
+function TestDnsFnsRead.test_readRecordDataLength()
+  local cases = {
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+      dataLength = testData.printerPtrResponse.table.answers[1].dataRaw:len(),
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
+      dataLength = testData.printerPtrResponse.table.additionalRecords[1].dataRaw:len(),
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
+      dataLength = testData.printerPtrResponse.table.additionalRecords[2].dataRaw:len(),
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[3].attributesOffset + 1,
+      dataLength = testData.printerPtrResponse.table.additionalRecords[3].dataRaw:len(),
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.answers[1].attributesOffset + 1,
+      dataLength = testData.datamunchAddressResponse.table.answers[1].dataRaw:len(),
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local result = dnsFns.readRecordDataLength(testCase.message, testCase.position)
+    lu.assertEquals(
+      result,
+      testCase.dataLength,
+      "Case #"..i
+    )
+  end
+end
+
+function TestDnsFnsRead.test_readRecordDataAsRawString()
+  local cases = {
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.answers[1].attributesOffset + 1,
+      data = testData.printerPtrResponse.table.answers[1].dataRaw,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[1].attributesOffset + 1,
+      data = testData.printerPtrResponse.table.additionalRecords[1].dataRaw,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[2].attributesOffset + 1,
+      data = testData.printerPtrResponse.table.additionalRecords[2].dataRaw,
+    },
+    {
+      message = testData.printerPtrResponse.raw,
+      position = testData.printerPtrResponse.table.additionalRecords[3].attributesOffset + 1,
+      data = testData.printerPtrResponse.table.additionalRecords[3].dataRaw,
+    },
+    {
+      message = testData.datamunchAddressResponse.raw,
+      position = testData.datamunchAddressResponse.table.answers[1].attributesOffset + 1,
+      data = testData.datamunchAddressResponse.table.answers[1].dataRaw,
+    },
+  }
+
+  for i, testCase in ipairs(cases) do
+    local result = dnsFns.readRecordDataAsRawString(testCase.message, testCase.position)
+    lu.assertEquals(
+      result,
+      testCase.data,
+      "Case #"..i
+    )
+  end
 end
