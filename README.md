@@ -13,6 +13,38 @@ Given that everything and its mum usually has some DNS library built in, this is
 
 
 
+## Usage
+
+
+### Available Record Data Readers
+
+The following types of Record Data have special reader functions, to translate things into a more customary format:
+
+- IPv4 Address, used by Record Types:
+    - `A` (1)
+- IPv6 Address, used by Record Types:
+    - `AAAA` (28)
+- Domain Name, used by Record Types:
+    - `NS` (2)
+    - `CNAME` (5)
+    - `PTR` (12)
+    - Many others, I expect...
+- Collection of Strings, used by Record Types:
+    - `TXT` (16)
+
+Note that the lists of Record Types for each one are non-exhaustive.  Those are just the common ones I encountered on my home network.
+
+
+
+## Documentation
+
+All functions have a doc block explaining them, so there's at least that much.
+
+TODO: Use Luadoc to make a pretty page.
+
+
+
 ## Useful Links
 
-- [RFC 1035](https://tools.ietf.org/html/rfc1035.html)
+- [RFC 1035](https://tools.ietf.org/html/rfc1035.html), the granddaddy RFC of them all.  At least on DNS stuff, anyway.
+- Wikipedia has [a sortable list of DNS Resource Record Types](https://en.wikipedia.org/wiki/List_of_DNS_record_types) because of course it does.  Useful since I didn't feel it was worth making a table mapping names to numbers in this module.
