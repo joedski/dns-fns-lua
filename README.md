@@ -9,11 +9,37 @@ The functions are written with the intention that you only read the parts of the
 
 That said, if you know you only need a subset of the functionality, just copy-paste that stuff and leave out the rest!
 
-Given that everything and its mum usually has some DNS library built in, this is mostly useful for reading and writing various mDNS requests that they don't support, since, well, they tend not to support them.  That's what I use it for, anyway.  It can also be used to just play with DNS messages more generally, see what's actually being tossed about.
+Given that everything and its mum usually has some DNS library built in, this is mostly useful for reading and writing various mDNS requests that libraries in embedded systems don't support, since, well, they tend not to support them.  That's what I use it for, anyway.  It can also be used to just play with DNS messages more generally, see what's actually being tossed about.
 
 
 
 ## Usage
+
+
+### Writing Messages
+
+DNS Messages are pretty easy to write, since the structure is rather regular.  There are four basic functions provided:
+
+- `initMessage(id, flags)` - creates a DNS Message Intermediate, to which you can write Questions and Resource Records.
+- `writeQuestion(message, domainName, type, class)` - writes a Question to a DNS Message Intermediate.
+- `writeResourceRecord(message, recordKind, domainName, type, class, ttl, recordData)` - writes a Resource Record of a given kind to a DNS Message Intermediate.
+    - The `recordData` must already be octets, no special serialization logic is implemented.
+- `serializeMessage(message)` - Converts a DNS Message Intermediate into octets which you can blat out into the network.
+    - This function mutates the DNS Message Intermediate, so you shouldn't reuse an intermediate after serializing it.
+
+For most uses, which is asking perfectly ordinary questions, only `initMessage()`, `writeQuestion()` and `serializeMessage()` are needed:
+
+```lua
+local dnsFns = require('dns-fns')
+
+-- Let's look for printers.
+-- Create a new query, no recursion requested, for printer PTRs.
+local msg = dnsFns.initMessage(0xbeef, 0)
+dnsFns.writeQuestion(msg, '_printer._tcp.local', 12, 1)
+local msgOctets = dnsFns.serializeMessage(msg)
+
+-- Now you can shoot msgOctets out a UDP socket of some sort.
+```
 
 
 ### Available Record Data Readers
