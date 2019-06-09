@@ -38,6 +38,10 @@ function module.readUInt16BE(message, position)
   return message:byte(position) * 256 + message:byte(position + 1)
 end
 
+function module.serializeUInt16BE(number)
+  return string.char(math.floor(number / 256), number % 256)
+end
+
 -- ":0:" is never truncated.
 local ipv6ZeroRuns = { '0:0:0:0:0:0:0:0', '0:0:0:0:0:0:0', '0:0:0:0:0:0', '0:0:0:0:0', '0:0:0:0', '0:0:0', '0:0' }
 
@@ -490,5 +494,109 @@ function module.readRecordDataAsCharacterStrings(message, attributesPosition)
 
   return characterStrings
 end
+
+
+
+-- ----------------
+-- Writing Functions
+-- ----------------
+
+--- Creates a new DNS Message Intermediate.
+-- Add questions and other records to it with `writeQuestion()`
+-- and `writeResourceRecord()`, then convert it to octets with
+-- `serializeMessage()`.
+function module.initMessage(id, flags)
+  return {
+    module.serializeUInt16BE(id),
+    module.serializeUInt16BE(flags),
+    0,
+    0,
+    0,
+    0,
+  }
+end
+
+--- Writes a single question to the given DNS Message Intermediate.
+function module.writeQuestion(message, name, type, class)
+  local questionOctets = {
+    module.serializeDomainName(name),
+    module.serializeUInt16BE(type),
+    module.serializeUInt16BE(class),
+  }
+
+  table.insert(message, table.concat(questionOctets))
+  message[3] = message[3] + 1
+
+  return message
+end
+
+--- Writes a single resource record of some given kind to the
+-- given DNS Message Intermediate.
+function module.writeResourceRecord(message, recordKind, name, type, class, ttl, recordData)
+  if recordKind ~= 'answer' and recordKind ~= 'nameServer' and recordKind ~= 'additionalRecord' then
+    error('"'..recordKind..'" is not a supported kind of record; use one of "answer", "nameServer", or "additionalRecord"')
+  end
+
+  local recordKindIndex
+  local resourceRecordOctets = {
+    module.serializeDomainName(name),
+    module.serializeUInt16BE(type),
+    module.serializeUInt16BE(class),
+    module.serializeUInt16BE(math.floor(ttl / 65536)),
+    module.serializeUInt16BE(ttl % 65536),
+    recordData,
+  }
+
+  table.insert(message, table.concat(resourceRecordOctets))
+
+  if recordKind == 'answer' then recordKindIndex = 4
+  elseif recordKind == 'nameServer' then recordKindIndex = 5
+  else recordKindIndex = 6
+  end
+  message[recordKindIndex] = message[recordKindIndex] + 1
+
+  return message
+end
+
+--- Serializes a domain name.  Does not perform any sort of compression.
+function module.serializeDomainName(name)
+  if type(name) == 'table' then
+    local nameParts = {}
+    for i in 1, #name do
+      table.insert(nameParts, string.char(#(name[i])))
+      table.insert(nameParts, name[i])
+    end
+    return table.concat(nameParts)
+  elseif type(name) == 'string' then
+    local nameParts = {}
+    local lastStart = 1
+    local nextStart = name.find('.', lastStart, true)
+    while nextStart ~= nil do
+      table.insert(nameParts, string.char(matchStart - 1))
+      table.insert(nameParts, name.sub(lastStart, nextStart - 1))
+      -- +1 to skip the dot.
+      lastStart = nextStart + 1
+      nextStart = name.find('.', lastStart, true)
+    end
+    local lastPart = name.sub(lastStart, -1)
+    table.insert(nameParts, string.char(#lastPart))
+    table.insert(nameParts, lastPart)
+    return table.concat(nameParts)
+  end
+
+  error('"'..type(name)..'" is not a supported type for names; use a table of strings or a "."-delimited string')
+end
+
+--- Serializes a DNS Message Intemediate into octets.
+-- This mutates the message intemediate, so don't reuse it afterwards.
+function module.serializeMessage(message)
+  message[3] = module.serializeUInt16BE(message[3])
+  message[4] = module.serializeUInt16BE(message[4])
+  message[5] = module.serializeUInt16BE(message[5])
+  message[6] = module.serializeUInt16BE(message[6])
+  return table.concat(message)
+end
+
+
 
 return module
